@@ -8,16 +8,48 @@ class AbstractClicker(ABC):
 
     @abstractmethod
     def __init__(self) -> None:
-        """Абстрактный метод инициализации"""
+        """Инициализация кликера.
+
+        Реализации могут принимать любые параметры, необходимые для
+        расчёта дохода за клик.
+        """
         raise NotImplementedError
 
     @abstractmethod
     def click(self) -> None:
-        """Абстрактный метод клика для накапливания монет"""
+        """Совершить клик для накапливания монет."""
         raise NotImplementedError
 
     @property
     @abstractmethod
     def income_per_click(self) -> int:
-        """Абстрактное свойство для доступа к количеству монет за клик"""
+        """Количество монет за один клик."""
         raise NotImplementedError
+
+
+class SimpleClicker(AbstractClicker):
+    """Простая реализация кликера с фиксированным доходом за клик."""
+
+    def __init__(self, income_per_click: int = 5) -> None:
+        """Создать кликер.
+
+        :param income_per_click: Доход за один клик (целое число >= 0)
+        """
+        if income_per_click < 0:
+            raise ValueError("income_per_click must be >= 0")
+        self._income_per_click = int(income_per_click)
+        self._clicks = 0
+
+    @property
+    def income_per_click(self) -> int:
+        """Возвращает доход за один клик."""
+        return self._income_per_click
+
+    def click(self) -> None:
+        """Зарегистрировать клик (увеличивает внутренний счётчик кликов)."""
+        self._clicks += 1
+
+    @property
+    def clicks(self) -> int:
+        """Количество совершённых кликов (внутренний счётчик)."""
+        return self._clicks
