@@ -1,10 +1,12 @@
-"""Модуль с интерфейсом и реализацией кликера"""
+"""Модуль с интерфейсом и реализацией кликера."""
 
 from abc import ABC, abstractmethod
 
+from . import constants
+
 
 class AbstractClicker(ABC):
-    """Интерфейс для кликера"""
+    """Интерфейс для кликера."""
 
     @abstractmethod
     def __init__(self) -> None:
@@ -30,7 +32,10 @@ class AbstractClicker(ABC):
 class SimpleClicker(AbstractClicker):
     """Простая реализация кликера с фиксированным доходом за клик."""
 
-    def __init__(self, income_per_click: int = 5) -> None:
+    def __init__(
+        self,
+        income_per_click: int = constants.DEFAULT_INCOME_PER_CLICK,
+    ) -> None:
         """Создать кликер.
 
         :param income_per_click: Доход за один клик (целое число >= 0)

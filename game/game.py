@@ -5,14 +5,16 @@
 
 from abc import ABC, abstractmethod
 from typing import Any
+from dataclasses import replace
 
 from .tamagochi import AbstractTamagochi
 from .clicker import AbstractClicker
 from .models import Food, Medicine
+from . import constants
 
 
 class AbstractGame(ABC):
-    """Интерфейс для логики игры"""
+    """Интерфейс для логики игры."""
 
     @abstractmethod
     def __init__(
@@ -23,9 +25,9 @@ class AbstractGame(ABC):
         _all_medicine: list[Medicine]
     ):
         """
-        Абстрактный метод инициализации класса игры
+        Абстрактный метод инициализации класса игры.
 
-        :param _tamagochi: экземпляр тамагочи
+        :param _tamagochi: Экземпляр тамагочи
         :param _clicker: экземпляр кликера
         :param _all_food: все доступные варианты еды
         :param _all_medicine: все доступные варианты лекарств
@@ -35,48 +37,48 @@ class AbstractGame(ABC):
     @abstractmethod
     def work(self) -> int:
         """
-        Абстрактный метод для логики действия "работа"
+        Абстрактный метод для логики действия "работа".
 
-        :return: количество заработанных монет
+        :return: Количество заработанных монет
         """
         raise NotImplementedError
 
     @abstractmethod
     def buy_food(self) -> None:
-        """Абстрактный метод для покупки еды"""
+        """Абстрактный метод для покупки еды."""
         raise NotImplementedError
 
     @abstractmethod
     def buy_medicine(self) -> None:
-        """Абстрактный метод для покупки лекарства"""
+        """Абстрактный метод для покупки лекарства."""
         raise NotImplementedError
 
     @abstractmethod
     def feed_tamagochi(self) -> None:
-        """Абстрактный метод для кормления тамагочи"""
+        """Абстрактный метод для кормления тамагочи."""
         raise NotImplementedError
 
     @abstractmethod
     def heal_tamagochi(self) -> None:
-        """Абстрактный метод для лечения тамагочи"""
+        """Абстрактный метод для лечения тамагочи."""
         raise NotImplementedError
 
     @abstractmethod
     def rest_tamagochi(self) -> None:
-        """Абстрактный метод для отдыха тамагочи"""
+        """Абстрактный метод для отдыха тамагочи."""
         raise NotImplementedError
 
     @abstractmethod
     def play_with_tamagochi(self) -> None:
-        """Абстрактный метод для игры с тамагочи"""
+        """Абстрактный метод для игры с тамагочи."""
         raise NotImplementedError
 
     @abstractmethod
     def get_status(self) -> dict[str, Any]:
         """
-        Абстрактный метод для получения статуса (всех характеристик) тамагочи
+        Абстрактный метод для получения статуса (всех характеристик) тамагочи.
 
-        :return: словарь со всеми характеристиками тамагочи
+        :return: Словарь со всеми характеристиками тамагочи
         """
         raise NotImplementedError
 
@@ -84,9 +86,9 @@ class AbstractGame(ABC):
     @abstractmethod
     def food(self) -> list[Food]:
         """
-        Абстрактное свойство для доступа к сумке с едой
+        Абстрактное свойство для доступа к сумке с едой.
 
-        :return: список с имеющимися (купленными) объектами еды
+        :return: Список с имеющимися (купленными) объектами еды
         """
         raise NotImplementedError
 
@@ -94,9 +96,9 @@ class AbstractGame(ABC):
     @abstractmethod
     def medicine(self) -> list[Medicine]:
         """
-        Абстрактное свойство для доступа к сумке с лекарствами
+        Абстрактное свойство для доступа к сумке с лекарствами.
 
-        :return: список с имеющимися (купленными) объектами лекарств
+        :return: Список с имеющимися (купленными) объектами лекарств
         """
         raise NotImplementedError
 
@@ -115,13 +117,18 @@ class SimpleGame(AbstractGame):
         all_food: list[Food],
         all_medicine: list[Medicine]
     ) -> None:
+        """Инициализировать игру.
+
+        Сохраняет переданные зависимости (тамагочи, кликер) и списки
+        доступной еды и лекарств. Создаёт пустой инвентарь и обнуляет монеты.
+        """
         self.tamagochi = tamagochi
         self._clicker = clicker
         self._all_food = list(all_food)
         self._all_medicine = list(all_medicine)
         self._bag_food: list[Food] = []
         self._bag_medicine: list[Medicine] = []
-        self._coins = 0
+        self._coins = constants.INITIAL_COINS
 
     # ---------- Вспомогательные методы ----------
     @staticmethod
@@ -182,15 +189,9 @@ class SimpleGame(AbstractGame):
                     print("Недостаточно монет для покупки лекарства.")
                     continue
                 self._coins -= item.price
-                # Создаём копию (uses=0), чтобы не делить один объект
-                # между покупками и не расходовать общее число применений.
-                med = Medicine(
-                    name=item.name,
-                    price=item.price,
-                    heal_hp=item.heal_hp,
-                    number_of_uses=item.number_of_uses,
-                    uses=0,
-                )
+                # Создаём копию (uses=0) через dataclasses.replace,
+                # чтобы не делить один объект между покупками.
+                med = replace(item, uses=0)
                 self._bag_medicine.append(med)
                 print(f"Куплено: {item.name}")
 

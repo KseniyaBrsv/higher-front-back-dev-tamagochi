@@ -1,18 +1,19 @@
-"""Модуль с интерфейсом и реализациями класса тамагочи"""
+"""Модуль с интерфейсом и реализациями класса тамагочи."""
 
 from abc import ABC, abstractmethod
 
 from .models import Food, Medicine
 from .exceptions import TamagochiIsGone
+from . import constants
 
 
 class AbstractTamagochi(ABC):
-    """Интерфейс логики тамагочи"""
+    """Интерфейс логики тамагочи."""
 
     @abstractmethod
     def feed(self, food: Food) -> None:
         """
-        Абстрактный метод для кормления тамагочи
+        Абстрактный метод для кормления тамагочи.
 
         :param food: объект еды для кормления
         """
@@ -20,20 +21,20 @@ class AbstractTamagochi(ABC):
 
     @abstractmethod
     def play(self) -> None:
-        """Абстрактный метод для игры с тамагочи"""
+        """Абстрактный метод для игры с тамагочи."""
         raise NotImplementedError
 
     @abstractmethod
     def rest(self) -> None:
-        """Абстрактный метод для отдыха тамагочи"""
+        """Абстрактный метод для отдыха тамагочи."""
         raise NotImplementedError
 
     @abstractmethod
     def heal(self, medicine: Medicine) -> None:
         """
-        Абстрактный метод для лечения тамагочи
+        Абстрактный метод для лечения тамагочи.
 
-        :param medicine: лекарство для лечения
+        :param medicine: Лекарство для лечения
         """
         raise NotImplementedError
 
@@ -41,16 +42,16 @@ class AbstractTamagochi(ABC):
     @abstractmethod
     def status(self) -> dict[str, int]:
         """
-        Абстрактное свойство для доступа ко всем состояниям тамагочи
+        Абстрактное свойство для доступа ко всем состояниям тамагочи.
 
-        :return: словарь со всеми состояниями тамагочи
+        :return: Словарь со всеми состояниями тамагочи
         """
         raise NotImplementedError
 
     @abstractmethod
     def is_alive(self) -> bool:
         """
-        Абстрактный метод для проверки жив ли тамагочи
+        Абстрактный метод для проверки жив ли тамагочи.
 
         :return: True если жив, иначе False
         """
@@ -59,7 +60,7 @@ class AbstractTamagochi(ABC):
     @abstractmethod
     def is_sick(self) -> bool:
         """
-        Абстрактный метод для проверки, не заболел ли тамагочи
+        Абстрактный метод для проверки, не заболел ли тамагочи.
 
         :return: True, если тамагочи болеет, иначе False
         """
@@ -69,14 +70,16 @@ class AbstractTamagochi(ABC):
     def update(self) -> None:
         """
         Абстрактный метод для обновления состояний тамагочи.
-        Должен использоваться после каждого взаимодействия с тамагочи
+
+        Должен использоваться после каждого взаимодействия с тамагочи.
         """
         raise NotImplementedError
 
 
 class SimpleTamagochi(AbstractTamagochi):
-    """Простая реализация тамагочи со следующими параметрами:
+    """Простая реализация тамагочи.
 
+    Параметры:
     - hp (здоровье): 0..100
     - energy (энергия): 0..100
     - hunger (голод): 0..100 (чем больше — тем голоднее)
@@ -92,20 +95,28 @@ class SimpleTamagochi(AbstractTamagochi):
     """
 
     def __init__(self) -> None:
-        self._hp = 100
-        self._energy = 100
-        self._hunger = 0
+        """Инициализировать тамагочи с полным здоровьем и энергией."""
+        self._hp = constants.INITIAL_HP
+        self._energy = constants.INITIAL_ENERGY
+        self._hunger = constants.INITIAL_HUNGER
         self._alive = True
         self._sick = False
 
     # ---------- Вспомогательные методы ----------
     @staticmethod
-    def _clamp(value: int, lo: int = 0, hi: int = 100) -> int:
+    def _clamp(
+        value: int,
+        lo: int = constants.STAT_MIN,
+        hi: int = constants.STAT_MAX,
+    ) -> int:
         return max(lo, min(hi, int(value)))
 
     def _recalc_sick(self) -> None:
         # Простое правило болезни: при сильном голоде или низком hp
-        self._sick = self._hp < 50 or self._hunger > 80
+        self._sick = (
+            self._hp < constants.HP_SICK_THRESHOLD
+            or self._hunger > constants.HUNGER_SICK_THRESHOLD
+        )
 
     # ---------- Реализация интерфейса ----------
     def feed(self, food: Food) -> None:
@@ -123,12 +134,20 @@ class SimpleTamagochi(AbstractTamagochi):
         """Поиграть: повышает голод, снижает энергию, может снизить hp."""
         if not self._alive:
             return
-        self._hunger = self._clamp(self._hunger + 7)
-        self._energy = self._clamp(self._energy - 8)
-        if self._energy < 20:
-            self._hp = self._clamp(self._hp - 3)
+        self._hunger = self._clamp(
+            self._hunger + constants.PLAY_HUNGER_DELTA
+        )
+        self._energy = self._clamp(
+            self._energy - constants.PLAY_ENERGY_DELTA
+        )
+        if self._energy < constants.LOW_ENERGY_THRESHOLD:
+            self._hp = self._clamp(
+                self._hp - constants.PLAY_HP_DAMAGE_LOW_ENERGY
+            )
         else:
-            self._hp = self._clamp(self._hp - 1)
+            self._hp = self._clamp(
+                self._hp - constants.PLAY_HP_DAMAGE_NORMAL
+            )
         if self._hp <= 0:
             self._alive = False
         self._recalc_sick()
@@ -137,9 +156,9 @@ class SimpleTamagochi(AbstractTamagochi):
         """Отдых: увеличивает энергию (менее эффективно при болезни)."""
         if not self._alive:
             return
-        gain = 15
+        gain = constants.REST_GAIN
         if self.is_sick():
-            gain = 8
+            gain = constants.REST_GAIN_SICK
         self._energy = self._clamp(self._energy + gain)
         self._recalc_sick()
 
@@ -182,17 +201,22 @@ class SimpleTamagochi(AbstractTamagochi):
             raise TamagochiIsGone("Питомец уже умер")
 
         # Естественная динамика
-        self._hunger = self._clamp(self._hunger + 2)
-        self._energy = self._clamp(self._energy - 1)
+        self._hunger = self._clamp(
+            self._hunger + constants.UPDATE_HUNGER_DELTA
+        )
+        self._energy = self._clamp(
+            self._energy - constants.UPDATE_ENERGY_DELTA
+        )
 
         # Урон от сильного голода или полной усталости
         damage = 0
-        if self._hunger >= 70:
-            damage += 2
+        if self._hunger >= constants.HUNGER_HEAVY_THRESHOLD:
+            damage += constants.HEAVY_HUNGER_DAMAGE
         if self._energy == 0:
-            damage += 1
-        if damage == 0 and self._hunger >= 30:
-            damage = 1  # понемногу слабеет при умеренном голоде
+            damage += constants.ZERO_ENERGY_DAMAGE
+        if damage == 0 and self._hunger >= constants.MODERATE_HUNGER_THRESHOLD:
+            # понемногу слабеет при умеренном голоде
+            damage = constants.MODERATE_HUNGER_DAMAGE
 
         self._hp = self._clamp(self._hp - damage)
         if self._hp <= 0:
