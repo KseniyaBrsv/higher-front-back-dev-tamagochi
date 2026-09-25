@@ -1,9 +1,16 @@
+"""Точка входа для консольного запуска игры.
+
+Скрипт запускает интерактивный цикл: работа, покупки, кормление,
+лечение, игры и отдых с питомцем.
+"""
 import os
 
 from game.models import Food, Medicine
 from game.tamagochi import SimpleTamagochi
 from game.clicker import SimpleClicker
 from game.game import SimpleGame
+from game.exceptions import TamagochiIsGone
+from game.constants import STATUS_TEMPLATE, MENU_TEXT
 
 
 def main():
@@ -31,51 +38,47 @@ def main():
     output = ''
 
     while True:
-        print(output)
-
-        print(f"Сумка с едой: {game.food}")
-        print(f"Сумка с лекарствами: {game.medicine}")
-
-        status = game.get_status()
-        print(
-            f"\nСтатус: голод {status['hunger']}, здоровье {status['hp']}, "
-            f"энергия {status['energy']}, монет {status['coins']}\n"
-        )
+        # Подготовим все строки и выведем одним принтом
+        lines: list[str] = []
+        if output:
+            lines.append(output)
+        lines.append(f"Сумка с едой: {game.food}")
+        lines.append(f"Сумка с лекарствами: {game.medicine}")
+        lines.append(STATUS_TEMPLATE.format(**game.get_status()))
         if game.tamagochi.is_sick():
-            print("=======Тамагочи болеет======")
-            print("=======Отдых действует менее эффективно=======")
-        print("1. Пойти на работу")
-        print("2. Купить еду")
-        print("3. Купить лекарство")
-        print("4. Покормить")
-        print("5. Вылечить")
-        print("6. Играть")
-        print("7. Отдых")
-        print("0. Выход")
-        match input("Выберите действие: "):
-            case "1":
-                income = game.work()
-                output = f'Вы заработали {income} монет'
-                game.tamagochi.update()
-            case "2":
-                game.buy_food()
-            case "3":
-                game.buy_medicine()
-            case "4":
-                game.feed_tamagochi()
+            lines.append("=======Тамагочи болеет======")
+            lines.append("=======Отдых действует менее эффективно=======")
+        lines.append(MENU_TEXT)
+        print("\n".join(lines))
 
-            case "5":
-                game.heal_tamagochi()
-            case "6":
-                game.play_with_tamagochi()
-                output = 'Вы поиграли с питомцем'
-            case "7":
-                game.rest_tamagochi()
-                output = 'Питомец отдохнул'
-            case "0":
-                break
-            case _:
-                output = "Неверная команда"
+        try:
+            choice = input("Выберите действие: ")
+            match choice:
+                case "1":
+                    income = game.work()
+                    output = f"Вы заработали {income} монет"
+                    game.tamagochi.update()
+                case "2":
+                    game.buy_food()
+                case "3":
+                    game.buy_medicine()
+                case "4":
+                    game.feed_tamagochi()
+                case "5":
+                    game.heal_tamagochi()
+                case "6":
+                    game.play_with_tamagochi()
+                    output = "Вы поиграли с питомцем"
+                case "7":
+                    game.rest_tamagochi()
+                    output = "Питомец отдохнул"
+                case "0":
+                    break
+                case _:
+                    output = "Неверная команда"
+        except TamagochiIsGone as e:
+            print(f"Игра окончена: {e}")
+            break
 
         os.system('clear')
 
